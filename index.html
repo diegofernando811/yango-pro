@@ -281,6 +281,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="metric"><div class="lbl">Días trabajados</div><div class="val" id="h-dias">0</div></div>
       <div class="metric"><div class="lbl">Total pedidos</div><div class="val" id="h-pedidos">0</div></div>
       <div class="metric"><div class="lbl">Promedio neto/día</div><div class="val warn" id="h-prom">$0</div></div>
+      <div class="metric"><div class="lbl">Km trip moto</div><div class="val" id="h-km-trip">0 km</div><div class="sub" id="h-km-trip-prom">prom: 0 km/día</div></div>
+      <div class="metric"><div class="lbl">Km Yango</div><div class="val" id="h-km-yango">0 km</div><div class="sub" id="h-km-yango-prom">prom: 0 km/día</div></div>
+      <div class="metric"><div class="lbl">Km muertos</div><div class="val warn" id="h-km-muertos">0 km</div><div class="sub">sin cobrar</div></div>
     </div>
     <div class="card">
       <div class="card-title">
@@ -622,6 +625,17 @@ function renderHistorial(){
   document.getElementById('h-dias').textContent = diasTrab;
   document.getElementById('h-pedidos').textContent = pf.length;
   document.getElementById('h-prom').textContent = fmt(Math.max(0,promDiario));
+
+  const kmTrip = jf.reduce((a,j) => a+(j.kmTotal||0), 0);
+  const kmYangoTotal = pf.reduce((a,p) => a+(p.km||0), 0);
+  const kmMuertos = Math.max(0, kmTrip - kmYangoTotal);
+  const promKmTrip = diasTrab>0 ? kmTrip/diasTrab : 0;
+  const promKmYango = diasTrab>0 ? kmYangoTotal/diasTrab : 0;
+  document.getElementById('h-km-trip').textContent = Math.round(kmTrip)+' km';
+  document.getElementById('h-km-trip-prom').textContent = 'prom: '+Math.round(promKmTrip)+' km/día';
+  document.getElementById('h-km-yango').textContent = Math.round(kmYangoTotal)+' km';
+  document.getElementById('h-km-yango-prom').textContent = 'prom: '+Math.round(promKmYango)+' km/día';
+  document.getElementById('h-km-muertos').textContent = Math.round(kmMuertos)+' km';
 
   // construir fechas para la gráfica
   let fechasDias = [];
