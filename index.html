@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Yango Pro — Rentabilidad</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f4f0;min-height:100vh;color:#1a1a1a}
+:root{--c1:#1D9E75;--c2:#0F6E56;--c3:#E1F5EE;--c4:#9FE1CB;--danger:#E24B4A;--warn:#BA7517;--warn-bg:#FAEEDA;--bg:#f0f4f0;--card:#ffffff;--text:#1a1a1a;--text2:#555;--border:#e0e0e0;--secondary:#f5f7f5}
+.app{max-width:480px;margin:0 auto;padding:12px;padding-bottom:32px}
+.header{background:var(--c2);color:#fff;border-radius:16px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.header h1{font-size:17px;font-weight:600;display:flex;align-items:center;gap:8px}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#9FE1CB;display:inline-block;margin-right:5px;transition:background .3s}
+.sync-dot.syncing{background:#FAC775;animation:pulse 1s infinite}
+.sync-dot.error{background:#F09595}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.tabs{display:flex;gap:4px;margin-bottom:12px;background:#e8ede8;padding:4px;border-radius:14px}
+.tab{flex:1;padding:9px 2px;border:none;background:transparent;cursor:pointer;font-size:11px;color:#666;border-radius:10px;font-family:inherit;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:2px}
+.tab svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8}
+.tab.active{background:#fff;color:var(--c2);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.section{display:none}
+.section.active{display:block}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.metric{background:var(--secondary);border-radius:10px;padding:10px 12px}
+.metric .lbl{font-size:11px;color:var(--text2);margin-bottom:4px}
+.metric .val{font-size:20px;font-weight:600;color:var(--text)}
+.metric .val.green{color:var(--c1)}
+.metric .val.red{color:var(--danger)}
+.metric .val.warn{color:var(--warn)}
+.metric .sub{font-size:11px;color:var(--text2);margin-top:2px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px}
+.card-title{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.card-title svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
+.form-row{margin-bottom:10px}
+.form-row label{font-size:12px;color:var(--text2);display:block;margin-bottom:4px;font-weight:500}
+.form-row input,.form-row select{width:100%;font-size:15px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--secondary);color:var(--text);font-family:inherit;-webkit-appearance:none}
+.form-row input:focus,.form-row select:focus{outline:none;border-color:var(--c1)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn-primary{width:100%;padding:13px;background:var(--c2);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-primary:active{opacity:.85;transform:scale(.99)}
+.btn-primary svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2}
+.btn-danger{padding:7px 10px;background:transparent;border:1px solid var(--danger);border-radius:8px;font-size:12px;cursor:pointer;color:var(--danger);font-family:inherit}
+.list-item{border-bottom:1px solid var(--border);padding:10px 0;display:flex;justify-content:space-between;align-items:center}
+.list-item:last-child{border-bottom:none}
+.list-item .desc{font-size:13px;color:var(--text)}
+.list-item .meta{font-size:11px;color:var(--text2);margin-top:2px}
+.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600}
+.badge.ef{background:#E1F5EE;color:#0F6E56}
+.badge.tc{background:#E6F1FB;color:#185FA5}
+.badge.cnt{background:#E1F5EE;color:#0F6E56;margin-left:6px}
+.empty{text-align:center;padding:24px 16px;color:var(--text2);font-size:13px}
+.empty svg{width:32px;height:32px;stroke:var(--text2);fill:none;stroke-width:1.5;margin-bottom:8px;display:block;margin-left:auto;margin-right:auto}
+.chart-wrap{position:relative;width:100%;height:220px}
+.saldo-box{background:var(--c2);border-radius:16px;padding:16px;margin-bottom:12px;color:#fff}
+.saldo-box .title{font-size:12px;opacity:.8;margin-bottom:4px}
+.saldo-box .amount{font-size:30px;font-weight:700}
+.neto-bar{display:flex;align-items:center;justify-content:space-between;background:var(--secondary);border-radius:10px;padding:10px 14px;margin-bottom:6px}
+.neto-bar .fecha{font-size:12px;color:var(--text2)}
+.neto-bar .neto{font-size:15px;font-weight:600}
+.amount.green{color:var(--c1)}
+.amount.red{color:var(--danger)}
+.info-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)}
+.info-row:last-child{border-bottom:none}
+.info-row span:first-child{color:var(--text2)}
+.info-row span:last-child{font-weight:600}
+.sep{height:1px;background:var(--border);margin:8px 0}
+.period-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.ptab{padding:7px 14px;border:1px solid var(--border);border-radius:20px;font-size:12px;cursor:pointer;background:transparent;color:var(--text2);font-family:inherit;font-weight:500}
+.ptab.active{background:var(--c2);color:#fff;border-color:var(--c2)}
+.login-screen{max-width:480px;margin:0 auto;padding:24px 16px}
+.login-card{background:#fff;border-radius:20px;padding:32px 24px;text-align:center;box-shadow:0 2px 20px rgba(0,0,0,.08)}
+.login-card h2{font-size:20px;font-weight:700;color:var(--c2);margin-bottom:8px}
+.login-card p{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:20px}
+.btn-google{display:inline-flex;align-items:center;gap:10px;padding:13px 22px;background:#fff;border:1px solid var(--border);border-radius:12px;font-size:15px;cursor:pointer;font-family:inherit;color:var(--text);font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.1);width:100%;justify-content:center}
+.btn-google:hover{background:#f8f8f8}
+.btn-local{display:block;width:100%;margin-top:10px;padding:11px;border:1px solid var(--border);border-radius:12px;background:transparent;font-size:13px;cursor:pointer;color:var(--text2);font-family:inherit}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--c2);color:#fff;padding:10px 20px;border-radius:24px;font-size:13px;font-weight:500;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1}
+.legend{display:flex;gap:14px;font-size:11px;color:var(--text2);margin-bottom:8px;flex-wrap:wrap}
+.legend span{display:flex;align-items:center;gap:4px}
+.legend-dot{width:10px;height:10px;border-radius:2px}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- LOGIN -->
+<div id="login-screen" class="login-screen" style="display:none">
+  <div style="text-align:center;margin-bottom:24px">
+    <div style="font-size:48px;margin-bottom:8px">🏍️</div>
+    <div style="font-size:22px;font-weight:700;color:var(--c2)">Yango Pro</div>
+    <div style="font-size:13px;color:var(--text2)">Control de rentabilidad en moto</div>
+  </div>
+  <div class="login-card">
+    <svg width="48" height="48" viewBox="0 0 48 48" style="margin-bottom:12px"><path fill="#4285F4" d="M43.6 20H24v8h11.3c-1 4-4 6.9-8.3 8.3v6.9h6.7c3.9-3.6 6.2-9 6.2-15.3 0-1.4-.1-2.7-.3-3.9z"/><path fill="#34A853" d="M24 44c5.4 0 10-1.8 13.3-4.8l-6.5-5a10.7 10.7 0 0 1-16-5.6H8.2v5.2C11.5 39.4 17.4 44 24 44z"/><path fill="#FBBC05" d="M14.8 28.6a11 11 0 0 1 0-7.2V16.2H8.2a20 20 0 0 0 0 17.6l6.6-5.2z"/><path fill="#EA4335" d="M24 13.5c3 0 5.6 1 7.7 3l5.7-5.7C34 7.2 29.4 5 24 5 17.4 5 11.5 9.6 8.2 16.2l6.6 5.2c1.5-4.7 6-7.9 9.2-7.9z"/></svg>
+    <h2>Conectar Google Drive</h2>
+    <p>Tus datos se guardarán en tu Google Drive y podrás acceder desde cualquier dispositivo.</p>
+    <button class="btn-google" onclick="iniciarLogin()">
+      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#4285F4" d="M43.6 20H24v8h11.3c-1 4-4 6.9-8.3 8.3v6.9h6.7c3.9-3.6 6.2-9 6.2-15.3 0-1.4-.1-2.7-.3-3.9z"/><path fill="#34A853" d="M24 44c5.4 0 10-1.8 13.3-4.8l-6.5-5a10.7 10.7 0 0 1-16-5.6H8.2v5.2C11.5 39.4 17.4 44 24 44z"/><path fill="#FBBC05" d="M14.8 28.6a11 11 0 0 1 0-7.2V16.2H8.2a20 20 0 0 0 0 17.6l6.6-5.2z"/><path fill="#EA4335" d="M24 13.5c3 0 5.6 1 7.7 3l5.7-5.7C34 7.2 29.4 5 24 5 17.4 5 11.5 9.6 8.2 16.2l6.6 5.2c1.5-4.7 6-7.9 9.2-7.9z"/></svg>
+      Conectar con Google Drive
+    </button>
+    <button class="btn-local" onclick="usarLocal()">📱 Usar solo en este dispositivo</button>
+    <p style="margin-top:14px;font-size:11px;color:#aaa">Solo crea un archivo <code>yango_data.json</code> en tu Drive. No accede a nada más.</p>
+  </div>
+</div>
+
+<!-- APP PRINCIPAL -->
+<div id="main-app" class="app" style="display:none">
+  <div class="header">
+    <div>
+      <h1>🏍️ Yango Pro</h1>
+      <div style="font-size:11px;opacity:.8;margin-top:2px"><span class="sync-dot" id="sync-dot"></span><span id="sync-label">Conectado</span></div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:11px;opacity:.75">saldo en app</div>
+      <div style="font-size:20px;font-weight:700" id="header-saldo">$0</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('hoy',this)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Hoy
+    </button>
+    <button class="tab" onclick="showTab('pedidos',this)">
+      <svg viewBox="0 0 24 24"><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/><polyline points="16.5 9.4 7.55 4.24"/><line x1="12" y1="22" x2="12" y2="12"/><line x1="3.27" y1="6.96" x2="12" y2="12.04"/></svg>
+      Pedidos
+    </button>
+    <button class="tab" onclick="showTab('gastos',this)">
+      <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      Gastos
+    </button>
+    <button class="tab" onclick="showTab('historial',this)">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Historial
+    </button>
+  </div>
+
+  <!-- HOY -->
+  <div class="section active" id="tab-hoy">
+    <div style="font-size:13px;color:var(--text2);margin-bottom:8px;font-weight:500" id="fecha-hoy"></div>
+    <div class="metrics">
+      <div class="metric"><div class="lbl">Ingreso bruto hoy</div><div class="val green" id="m-bruto">$0</div><div class="sub" id="m-pedidos">0 pedidos</div></div>
+      <div class="metric"><div class="lbl">Ganancia neta</div><div class="val green" id="m-neto">$0</div><div class="sub" id="m-gastos-hoy">gastos: $0</div></div>
+      <div class="metric"><div class="lbl">$ por hora</div><div class="val warn" id="m-xhora">$0</div><div class="sub" id="m-horas">0 h trabajadas</div></div>
+      <div class="metric"><div class="lbl">Km recorridos</div><div class="val" id="m-km">0 km</div><div class="sub" id="m-km-muertos">muertos: 0 km</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Cerrar jornada del día
+      </div>
+      <div class="form-row"><label>Fecha</label><input type="date" id="j-fecha"></div>
+      <div class="row2">
+        <div class="form-row"><label>Hora inicio</label><input type="time" id="j-inicio"></div>
+        <div class="form-row"><label>Hora fin</label><input type="time" id="j-fin"></div>
+      </div>
+      <div class="row2">
+        <div class="form-row"><label>Km trip moto (total día)</label><input type="number" id="j-km-total" placeholder="ej: 85" inputmode="numeric"></div>
+        <div class="form-row"><label>Km reportados Yango</label><input type="number" id="j-km-yango" placeholder="ej: 62" inputmode="numeric"></div>
+      </div>
+      <div class="form-row"><label>Peajes + parqueadero (COP)</label><input type="number" id="j-peajes" placeholder="0" inputmode="numeric"></div>
+      <button class="btn-primary" onclick="cerrarJornada()">
+        <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Guardar jornada
+      </button>
+    </div>
+  </div>
+
+  <!-- PEDIDOS -->
+  <div class="section" id="tab-pedidos">
+    <div class="card">
+      <div class="card-title">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Registrar pedido
+      </div>
+      <div class="form-row"><label>Fecha</label><input type="date" id="p-fecha"></div>
+      <div class="row2">
+        <div class="form-row"><label>Valor ganado (COP)</label><input type="number" id="p-valor" placeholder="ej: 8500" inputmode="numeric"></div>
+        <div class="form-row"><label>Tipo de pago</label>
+          <select id="p-tipo"><option value="efectivo">Efectivo</option><option value="tarjeta">Tarjeta/App</option></select>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="form-row"><label>Km del viaje (Yango)</label><input type="number" id="p-km" placeholder="ej: 4.5" inputmode="decimal"></div>
+        <div class="form-row"><label>Hora</label><input type="time" id="p-hora"></div>
+      </div>
+      <div class="form-row"><label>Nota (opcional)</label><input type="text" id="p-nota" placeholder="ej: zona norte, demoró mucho..."></div>
+      <button class="btn-primary" onclick="agregarPedido()">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Agregar pedido
+      </button>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        Pedidos de hoy
+        <span id="badge-pedidos" class="badge cnt">0</span>
+      </div>
+      <div id="lista-pedidos"><div class="empty"><svg viewBox="0 0 24 24"><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/></svg>Sin pedidos aún hoy</div></div>
+    </div>
+  </div>
+
+  <!-- GASTOS -->
+  <div class="section" id="tab-gastos">
+    <div class="saldo-box">
+      <div class="title">⚡ Saldo en app Yango (retiro los martes)</div>
+      <div class="amount" id="saldo-app">$0</div>
+      <div style="font-size:11px;opacity:.75;margin-top:4px;margin-bottom:8px">Registra cuando retires a Nequi/Daviplata:</div>
+      <div style="display:flex;gap:8px">
+        <input type="number" id="retiro-monto" placeholder="monto retirado" style="flex:1;padding:9px 12px;border-radius:10px;border:none;font-size:14px;background:rgba(255,255,255,.2);color:#fff;font-family:inherit" inputmode="numeric">
+        <button onclick="registrarRetiro()" style="padding:9px 16px;background:rgba(255,255,255,.25);border:none;border-radius:10px;color:#fff;cursor:pointer;font-size:13px;font-family:inherit;font-weight:600">Retiré</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <svg viewBox="0 0 24 24"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm-8 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>
+        Registrar tanqueada (full)
+      </div>
+      <div class="form-row"><label>Fecha</label><input type="date" id="g-fecha-gas"></div>
+      <div class="row2">
+        <div class="form-row"><label>Valor pagado (COP)</label><input type="number" id="g-valor-gas" placeholder="ej: 25000" inputmode="numeric"></div>
+        <div class="form-row"><label>Km odómetro actual</label><input type="number" id="g-odo" placeholder="ej: 12540" inputmode="numeric"></div>
+      </div>
+      <button class="btn-primary" onclick="agregarGasolina()">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Registrar tanqueada
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+        Otro gasto de moto
+      </div>
+      <div class="form-row"><label>Fecha</label><input type="date" id="g-fecha-otro"></div>
+      <div class="row2">
+        <div class="form-row"><label>Categoría</label>
+          <select id="g-cat">
+            <option value="mantenimiento">Mantenimiento</option>
+            <option value="soat">SOAT / Impuestos</option>
+            <option value="parqueadero">Parqueadero</option>
+            <option value="peaje">Peaje</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+        <div class="form-row"><label>Valor (COP)</label><input type="number" id="g-valor-otro" placeholder="ej: 15000" inputmode="numeric"></div>
+      </div>
+      <div class="form-row"><label>Descripción</label><input type="text" id="g-desc" placeholder="ej: cambio de aceite"></div>
+      <button class="btn-primary" onclick="agregarGastoOtro()">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Agregar gasto
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <svg viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+        Rendimiento de gasolina
+      </div>
+      <div id="rendimiento-gas"><div class="empty">Registra al menos 2 tanqueadas para calcular rendimiento</div></div>
+    </div>
+  </div>
+
+  <!-- HISTORIAL -->
+  <div class="section" id="tab-historial">
+    <div class="period-tabs">
+      <button class="ptab active" onclick="setPeriod('7d',this)">7 días</button>
+      <button class="ptab" onclick="setPeriod('mes',this)">Este mes</button>
+      <button class="ptab" onclick="setPeriod('mesant',this)">Mes anterior</button>
+      <button class="ptab" onclick="setPeriod('total',this)">Total</button>
+    </div>
+    <div class="metrics">
+      <div class="metric"><div class="lbl">Ingresos</div><div class="val green" id="h-ing">$0</div></div>
+      <div class="metric"><div class="lbl">Gastos</div><div class="val red" id="h-gast">$0</div></div>
+      <div class="metric"><div class="lbl">Ganancia neta</div><div class="val" id="h-neto">$0</div></div>
+      <div class="metric"><div class="lbl">Días trabajados</div><div class="val" id="h-dias">0</div></div>
+      <div class="metric"><div class="lbl">Total pedidos</div><div class="val" id="h-pedidos">0</div></div>
+      <div class="metric"><div class="lbl">Promedio neto/día</div><div class="val warn" id="h-prom">$0</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Ganancia neta por día
+      </div>
+      <div class="legend">
+        <span><span class="legend-dot" style="background:#1D9E75"></span>Ganancia</span>
+        <span><span class="legend-dot" style="background:#E24B4A"></span>Pérdida</span>
+      </div>
+      <div class="chart-wrap"><canvas id="chart-hist" role="img" aria-label="Gráfica de ganancia neta por día">Ganancia por día</canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Resumen por jornada
+      </div>
+      <div id="lista-jornadas"><div class="empty">Sin jornadas registradas</div></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const CLIENT_ID = '186342142022-04qefg3bi476kc63r06pu59aa6lqg2u8.apps.googleusercontent.com';
+const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
+const FILE_NAME = 'yango_data.json';
+
+let accessToken = null;
+let fileId = null;
+let saveTimer = null;
+let chartHist = null;
+let currentPeriod = '7d';
+let data = { pedidos:[], jornadas:[], gasolina:[], gastosOtros:[], saldoApp:0 };
+
+function fmt(n){ return '$' + Math.round(n).toLocaleString('es-CO'); }
+function hoy(){ return new Date().toISOString().split('T')[0]; }
+function parseH(t){ if(!t) return 0; const [h,m] = t.split(':').map(Number); return h + m/60; }
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function setSyncStatus(s){
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-label');
+  dot.className = 'sync-dot' + (s==='syncing'?' syncing':s==='error'?' error':'');
+  lbl.textContent = s==='syncing'?'Guardando...':s==='error'?'Sin conexión':'Guardado ✓';
+}
+
+function iniciarLogin(){
+  const redirectUri = location.href.split('#')[0].split('?')[0];
+  const url = `https://accounts.google.com/o/oauth2/v2/auth`
+    + `?client_id=${encodeURIComponent(CLIENT_ID)}`
+    + `&redirect_uri=${encodeURIComponent(redirectUri)}`
+    + `&response_type=token`
+    + `&scope=${encodeURIComponent(SCOPES)}`
+    + `&prompt=consent`;
+  location.href = url;
+}
+
+function usarLocal(){
+  localStorage.setItem('yango_use_local','1');
+  inicializarApp();
+}
+
+async function inicializarApp(){
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('main-app').style.display = 'block';
+  document.getElementById('fecha-hoy').textContent = new Date().toLocaleDateString('es-CO',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  setFechasHoy();
+
+  if(accessToken){
+    setSyncStatus('syncing');
+    await cargarDesdeDrive();
+  } else {
+    const saved = localStorage.getItem('yango_data_v4');
+    if(saved) try{ data = JSON.parse(saved); }catch(e){}
+    setSyncStatus('error');
+    document.getElementById('sync-label').textContent = 'Local';
+  }
+  renderHoy(); renderGastos(); updateHeaderSaldo();
+}
+
+function setFechasHoy(){
+  const h = hoy();
+  ['j-fecha','p-fecha','g-fecha-gas','g-fecha-otro'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = h;
+  });
+}
+
+async function cargarDesdeDrive(){
+  try{
+    const r = await fetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&fields=files(id,name)',
+      { headers:{ Authorization:'Bearer '+accessToken }});
+    if(r.status === 401){ accessToken=null; localStorage.removeItem('yango_token'); setSyncStatus('error'); return; }
+    const js = await r.json();
+    const f = js.files?.find(x => x.name === FILE_NAME);
+    if(f){
+      fileId = f.id;
+      const r2 = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+        { headers:{ Authorization:'Bearer '+accessToken }});
+      data = await r2.json();
+    }
+    setSyncStatus('ok');
+  }catch(e){ setSyncStatus('error'); }
+}
+
+async function guardarEnDrive(){
+  if(!accessToken){ saveLocal(); return; }
+  setSyncStatus('syncing');
+  const body = JSON.stringify(data);
+  try{
+    if(fileId){
+      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
+        { method:'PATCH', headers:{ Authorization:'Bearer '+accessToken, 'Content-Type':'application/json'}, body });
+    } else {
+      const meta = await fetch('https://www.googleapis.com/drive/v3/files',
+        { method:'POST', headers:{ Authorization:'Bearer '+accessToken, 'Content-Type':'application/json'},
+          body: JSON.stringify({ name: FILE_NAME, parents:['appDataFolder']})});
+      const mj = await meta.json(); fileId = mj.id;
+      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
+        { method:'PATCH', headers:{ Authorization:'Bearer '+accessToken, 'Content-Type':'application/json'}, body });
+    }
+    setSyncStatus('ok');
+  }catch(e){ setSyncStatus('error'); saveLocal(); }
+}
+
+function saveLocal(){ localStorage.setItem('yango_data_v4', JSON.stringify(data)); }
+
+function saveData(){
+  saveLocal();
+  if(accessToken){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(guardarEnDrive, 1500);
+  }
+}
+
+function updateHeaderSaldo(){
+  document.getElementById('header-saldo').textContent = fmt(data.saldoApp);
+  document.getElementById('saldo-app').textContent = fmt(data.saldoApp);
+}
+
+function showTab(t, el){
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  el.classList.add('active');
+  if(t==='historial') renderHistorial();
+  if(t==='hoy'||t==='pedidos') renderHoy();
+  if(t==='gastos') renderGastos();
+}
+
+function setPeriod(p, el){
+  currentPeriod = p;
+  document.querySelectorAll('.ptab').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderHistorial();
+}
+
+function getFechasFiltro(){
+  const h = hoy();
+  if(currentPeriod==='7d'){
+    const d = new Date(); d.setDate(d.getDate()-6);
+    return { desde: d.toISOString().split('T')[0], hasta: h };
+  }
+  if(currentPeriod==='mes'){
+    return { desde: h.substring(0,7)+'-01', hasta: h };
+  }
+  if(currentPeriod==='mesant'){
+    const d = new Date(); d.setDate(1); d.setMonth(d.getMonth()-1);
+    const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0');
+    const ultimo = new Date(y, d.getMonth()+1, 0).getDate();
+    return { desde:`${y}-${m}-01`, hasta:`${y}-${m}-${String(ultimo).padStart(2,'0')}` };
+  }
+  return { desde:'2000-01-01', hasta:'2099-12-31' };
+}
+
+function renderHoy(){
+  const ph = data.pedidos.filter(p => p.fecha === hoy());
+  const bruto = ph.reduce((a,p) => a+p.valor, 0);
+  const gh = data.gastosOtros.filter(g => g.fecha === hoy()).reduce((a,g) => a+g.valor, 0);
+  const gasolH = data.gasolina.filter(g => g.fecha === hoy()).reduce((a,g) => a+g.valor, 0);
+  const jh = data.jornadas.find(j => j.fecha === hoy());
+  const peajes = jh ? jh.peajes : 0;
+  const gastos = gh + gasolH + peajes;
+  const neto = bruto - gastos;
+  const horas = jh ? (parseH(jh.fin) - parseH(jh.inicio)) : 0;
+  const xhora = horas > 0 ? neto/horas : 0;
+  const kmTotal = jh ? (jh.kmTotal||0) : 0;
+  const kmYango = ph.reduce((a,p) => a+(p.km||0), 0);
+  const kmMuertos = Math.max(0, kmTotal - kmYango);
+
+  document.getElementById('m-bruto').textContent = fmt(bruto);
+  document.getElementById('m-pedidos').textContent = ph.length + ' pedidos';
+  document.getElementById('m-neto').textContent = fmt(neto);
+  document.getElementById('m-neto').className = 'val '+(neto>=0?'green':'red');
+  document.getElementById('m-gastos-hoy').textContent = 'gastos: '+fmt(gastos);
+  document.getElementById('m-xhora').textContent = fmt(Math.max(0,xhora));
+  document.getElementById('m-horas').textContent = horas.toFixed(1)+' h trabajadas';
+  document.getElementById('m-km').textContent = kmTotal+' km';
+  document.getElementById('m-km-muertos').textContent = 'muertos: '+kmMuertos.toFixed(1)+' km';
+
+  const lista = document.getElementById('lista-pedidos');
+  document.getElementById('badge-pedidos').textContent = ph.length;
+  if(!ph.length){
+    lista.innerHTML = '<div class="empty"><svg viewBox="0 0 24 24" style="width:32px;height:32px;stroke:#aaa;fill:none;stroke-width:1.5;display:block;margin:0 auto 8px"><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0"/></svg>Sin pedidos aún hoy</div>';
+    return;
+  }
+  lista.innerHTML = ph.slice().reverse().map(p => `
+    <div class="list-item">
+      <div>
+        <div class="desc">${fmt(p.valor)} <span class="badge ${p.tipo==='efectivo'?'ef':'tc'}">${p.tipo==='efectivo'?'Efectivo':'Tarjeta'}</span></div>
+        <div class="meta">${p.hora||''} · ${p.km||0} km Yango${p.nota?' · '+p.nota:''}</div>
+      </div>
+      <button class="btn-danger" onclick="eliminarPedido('${p.id}')">✕</button>
+    </div>`).join('');
+}
+
+function agregarPedido(){
+  const v = parseFloat(document.getElementById('p-valor').value);
+  if(!v||v<=0){ alert('Ingresa un valor válido'); return; }
+  const p = {
+    id: Date.now().toString(),
+    fecha: document.getElementById('p-fecha').value,
+    valor: v,
+    tipo: document.getElementById('p-tipo').value,
+    km: parseFloat(document.getElementById('p-km').value)||0,
+    hora: document.getElementById('p-hora').value,
+    nota: document.getElementById('p-nota').value
+  };
+  if(p.tipo==='tarjeta') data.saldoApp += v;
+  data.pedidos.push(p); saveData();
+  ['p-valor','p-km','p-hora','p-nota'].forEach(id => document.getElementById(id).value='');
+  renderHoy(); updateHeaderSaldo(); showToast('Pedido agregado ✓');
+}
+
+function eliminarPedido(id){
+  const p = data.pedidos.find(x => x.id===id);
+  if(p && p.tipo==='tarjeta') data.saldoApp = Math.max(0, data.saldoApp - p.valor);
+  data.pedidos = data.pedidos.filter(x => x.id!==id);
+  saveData(); renderHoy(); updateHeaderSaldo();
+}
+
+function cerrarJornada(){
+  const fecha = document.getElementById('j-fecha').value;
+  const ini = document.getElementById('j-inicio').value;
+  const fin = document.getElementById('j-fin').value;
+  if(!ini||!fin){ alert('Ingresa hora inicio y fin'); return; }
+  data.jornadas = data.jornadas.filter(j => j.fecha!==fecha);
+  data.jornadas.push({
+    fecha, inicio:ini, fin:fin,
+    kmTotal: parseFloat(document.getElementById('j-km-total').value)||0,
+    kmYango: parseFloat(document.getElementById('j-km-yango').value)||0,
+    peajes: parseFloat(document.getElementById('j-peajes').value)||0
+  });
+  saveData(); renderHoy();
+  ['j-km-total','j-km-yango','j-peajes'].forEach(id => document.getElementById(id).value='');
+  showToast('Jornada guardada ✓');
+}
+
+function agregarGasolina(){
+  const v = parseFloat(document.getElementById('g-valor-gas').value);
+  if(!v||v<=0){ alert('Ingresa el valor'); return; }
+  data.gasolina.push({
+    id: Date.now().toString(),
+    fecha: document.getElementById('g-fecha-gas').value,
+    valor: v,
+    odometro: parseFloat(document.getElementById('g-odo').value)||0
+  });
+  saveData(); renderGastos();
+  ['g-valor-gas','g-odo'].forEach(id => document.getElementById(id).value='');
+  showToast('Tanqueada registrada ✓');
+}
+
+function agregarGastoOtro(){
+  const v = parseFloat(document.getElementById('g-valor-otro').value);
+  if(!v||v<=0){ alert('Ingresa un valor'); return; }
+  data.gastosOtros.push({
+    id: Date.now().toString(),
+    fecha: document.getElementById('g-fecha-otro').value,
+    categoria: document.getElementById('g-cat').value,
+    valor: v,
+    desc: document.getElementById('g-desc').value
+  });
+  saveData(); renderGastos();
+  ['g-valor-otro','g-desc'].forEach(id => document.getElementById(id).value='');
+  showToast('Gasto registrado ✓');
+}
+
+function registrarRetiro(){
+  const m = parseFloat(document.getElementById('retiro-monto').value);
+  if(!m||m<=0){ alert('Ingresa el monto'); return; }
+  data.saldoApp = Math.max(0, data.saldoApp - m);
+  saveData(); renderGastos(); updateHeaderSaldo();
+  document.getElementById('retiro-monto').value='';
+  showToast('Retiro registrado ✓');
+}
+
+function renderGastos(){
+  updateHeaderSaldo();
+  const gases = data.gasolina.slice().sort((a,b) => a.fecha.localeCompare(b.fecha));
+  const rdiv = document.getElementById('rendimiento-gas');
+  if(gases.length < 2){ rdiv.innerHTML='<div class="empty">Registra al menos 2 tanqueadas para calcular rendimiento</div>'; return; }
+  let html = '';
+  for(let i=1; i<gases.length; i++){
+    const prev=gases[i-1], cur=gases[i];
+    const km = cur.odometro - prev.odometro;
+    const costokm = km>0 ? (cur.valor/km) : 0;
+    html += `<div class="info-row"><span>📅 Fecha tanqueada</span><span>${cur.fecha}</span></div>
+    <div class="info-row"><span>💰 Valor pagado</span><span>${fmt(cur.valor)}</span></div>
+    <div class="info-row"><span>🛣️ Km desde última tanqueada</span><span>${Math.round(km)} km</span></div>
+    <div class="info-row"><span>⚡ Costo por km</span><span>${fmt(costokm)}/km</span></div>
+    <div class="sep"></div>`;
+  }
+  rdiv.innerHTML = html;
+}
+
+function renderHistorial(){
+  const {desde, hasta} = getFechasFiltro();
+  const pf = data.pedidos.filter(p => p.fecha>=desde && p.fecha<=hasta);
+  const gf = data.gastosOtros.filter(g => g.fecha>=desde && g.fecha<=hasta);
+  const gasf = data.gasolina.filter(g => g.fecha>=desde && g.fecha<=hasta);
+  const jf = data.jornadas.filter(j => j.fecha>=desde && j.fecha<=hasta);
+
+  const ing = pf.reduce((a,p) => a+p.valor, 0);
+  const gast = gf.reduce((a,g) => a+g.valor, 0) + gasf.reduce((a,g) => a+g.valor, 0) + jf.reduce((a,j) => a+j.peajes, 0);
+  const neto = ing - gast;
+  const diasTrab = new Set(jf.map(j=>j.fecha)).size;
+  const promDiario = diasTrab>0 ? neto/diasTrab : 0;
+
+  document.getElementById('h-ing').textContent = fmt(ing);
+  document.getElementById('h-gast').textContent = fmt(gast);
+  const ne = document.getElementById('h-neto');
+  ne.textContent = fmt(neto); ne.className = 'val '+(neto>=0?'green':'red');
+  document.getElementById('h-dias').textContent = diasTrab;
+  document.getElementById('h-pedidos').textContent = pf.length;
+  document.getElementById('h-prom').textContent = fmt(Math.max(0,promDiario));
+
+  // construir fechas para la gráfica
+  let fechasDias = [];
+  if(currentPeriod==='7d'){
+    for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); fechasDias.push(d.toISOString().split('T')[0]); }
+  } else {
+    const ds = new Date(desde+'T12:00:00'), dt = new Date(hasta+'T12:00:00');
+    const diff = Math.round((dt-ds)/86400000)+1;
+    const step = diff>90?7:diff>30?2:1;
+    for(let i=0;i<diff;i+=step){ const d=new Date(ds); d.setDate(d.getDate()+i); fechasDias.push(d.toISOString().split('T')[0]); }
+  }
+
+  const labels = fechasDias.map(f => {
+    const d = new Date(f+'T12:00:00');
+    return currentPeriod==='total' ? d.toLocaleDateString('es-CO',{day:'numeric',month:'short'}) : d.toLocaleDateString('es-CO',{weekday:'short',day:'numeric'});
+  });
+  const netosDias = fechasDias.map(f => {
+    const pi = data.pedidos.filter(p=>p.fecha===f).reduce((a,p)=>a+p.valor,0);
+    const gi = data.gastosOtros.filter(g=>g.fecha===f).reduce((a,g)=>a+g.valor,0);
+    const gasi = data.gasolina.filter(g=>g.fecha===f).reduce((a,g)=>a+g.valor,0);
+    const ji = data.jornadas.find(j=>j.fecha===f);
+    return Math.round(pi - gi - gasi - (ji?ji.peajes:0));
+  });
+
+  if(chartHist) chartHist.destroy();
+  chartHist = new Chart(document.getElementById('chart-hist'), {
+    type:'bar',
+    data:{ labels, datasets:[{ label:'Neto', data:netosDias, backgroundColor:netosDias.map(n=>n>=0?'#1D9E75':'#E24B4A'), borderRadius:5, borderSkipped:false }]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>fmt(ctx.raw)}}},
+      scales:{ x:{ticks:{font:{size:10},color:'#888',autoSkip:true,maxRotation:45}}, y:{ticks:{font:{size:10},color:'#888',callback:v=>fmt(v)}}}}
+  });
+
+  // lista jornadas
+  const jords = jf.slice().sort((a,b) => b.fecha.localeCompare(a.fecha));
+  const lj = document.getElementById('lista-jornadas');
+  if(!jords.length){ lj.innerHTML='<div class="empty">Sin jornadas en este período</div>'; return; }
+  lj.innerHTML = jords.map(j => {
+    const ph = data.pedidos.filter(p=>p.fecha===j.fecha);
+    const ingj = ph.reduce((a,p)=>a+p.valor,0);
+    const gj = data.gastosOtros.filter(g=>g.fecha===j.fecha).reduce((a,g)=>a+g.valor,0);
+    const gasj = data.gasolina.filter(g=>g.fecha===j.fecha).reduce((a,g)=>a+g.valor,0);
+    const netoj = ingj - gj - j.peajes - gasj;
+    const hrs = (parseH(j.fin) - parseH(j.inicio)).toFixed(1);
+    const xhr = hrs>0 ? fmt(netoj/hrs) : '—';
+    return `<div class="neto-bar">
+      <div>
+        <div style="font-size:13px;font-weight:600">${new Date(j.fecha+'T12:00:00').toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short'})}</div>
+        <div style="font-size:11px;color:var(--text2)">${ph.length} pedidos · ${hrs}h · ${xhr}/h</div>
+      </div>
+      <div class="neto ${netoj>=0?'amount green':'amount red'}">${fmt(netoj)}</div>
+    </div>`;
+  }).join('');
+}
+
+// --- INICIO: manejar OAuth redirect ---
+const hash = location.hash;
+if(hash.includes('access_token')){
+  const params = new URLSearchParams(hash.substring(1));
+  accessToken = params.get('access_token');
+  localStorage.setItem('yango_token', accessToken);
+  history.replaceState(null, '', location.pathname);
+} else {
+  const saved = localStorage.getItem('yango_token');
+  if(saved) accessToken = saved;
+}
+
+const useLocal = localStorage.getItem('yango_use_local');
+if(accessToken || useLocal){
+  inicializarApp();
+} else {
+  document.getElementById('login-screen').style.display = 'block';
+}
+</script>
+</body>
+</html>
