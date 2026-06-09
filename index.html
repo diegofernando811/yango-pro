@@ -334,7 +334,7 @@ function setSyncStatus(s){
 }
 
 function iniciarLogin(){
-  const redirectUri = location.href.split('#')[0].split('?')[0];
+  const redirectUri = 'https://diegofernando811.github.io/yango-pro/';
   const url = `https://accounts.google.com/o/oauth2/v2/auth`
     + `?client_id=${encodeURIComponent(CLIENT_ID)}`
     + `&redirect_uri=${encodeURIComponent(redirectUri)}`
